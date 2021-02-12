@@ -1,1 +1,1 @@
-# streamdeck-pihole
+# streamdeck-plugins

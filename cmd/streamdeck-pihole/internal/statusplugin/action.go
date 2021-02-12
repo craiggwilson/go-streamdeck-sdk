@@ -3,96 +3,133 @@ package statusplugin
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
+	"sync"
+	"time"
 
 	"github.com/samwho/streamdeck"
+
+	"streamdeckpihole/pkg/pihole"
 )
 
-// Register adds the Status action to the client.
+// Register adds the CurrentStatus action to the client.
 func Register(client *streamdeck.Client) {
 	action := client.Action("com.craiggwilson.streamdeck.pihole.status")
 
-	settings := make(map[string]*StatusSettings)
+	var stateLock sync.Mutex
+	states := make(map[string]*state)
 
-	loadSettings := func(eventContext string) *StatusSettings{
-		s, ok := settings[eventContext]
+	loadState := func(eventContext string) *state {
+		stateLock.Lock()
+		defer stateLock.Unlock()
+		s, ok := states[eventContext]
 		if !ok {
-			s = &StatusSettings{}
-			settings[eventContext] = s
+			s = newState()
+			states[eventContext] = s
 		}
 
 		return s
+	}
+
+	deleteState := func(eventContext string) {
+		stateLock.Lock()
+		defer stateLock.Unlock()
+		s, ok := states[eventContext]
+		if ok {
+			s.Close()
+			delete(states, eventContext)
+		}
 	}
 
 	action.RegisterHandler(streamdeck.WillAppear, func(ctx context.Context, client *streamdeck.Client, event streamdeck.Event) error {
 		log.Printf("received WillAppear event (%s): %s", event.Context, event.Payload)
 		var p streamdeck.WillAppearPayload
 		if err := json.Unmarshal(event.Payload, &p); err != nil {
-			return fmt.Errorf("unmarshaling WillAppear payload: %w", err)
+			return handleError("unmarshaling WillAppear payload: %w", err)
 		}
 
-		s := loadSettings(event.Context)
-		if err := json.Unmarshal(p.Settings, s); err != nil {
-			return fmt.Errorf("unmarshaling WillAppear payload settings: %w", err)
+		s := loadState(event.Context)
+		if err := s.UpdateSettingsFromJSON(p.Settings); err != nil {
+			return handleError("unmarshaling WillAppear payload states: %w", err)
 		}
 
-		if err := client.SendToPropertyInspector(ctx, p.Settings); err != nil {
-			return fmt.Errorf("sending to property inspector: %w", err)
-		}
+		m := s.Monitor()
+		go func() {
+			for su := range m {
+				var title string
+				if su.RemainingDisabledSeconds > 0 {
+					d := time.Duration(su.RemainingDisabledSeconds) * time.Second
+					title = d.String()
+				}
 
-		if err := updateDisplay(ctx, client, s); err != nil {
-			return fmt.Errorf("setting title: %w", err)
-		}
+				if err := client.SetTitle(ctx, title, streamdeck.HardwareAndSoftware); err != nil {
+					_ = handleError("setting title: %w", err)
+				}
 
-		return nil
-	})
-
-	action.RegisterHandler(streamdeck.SendToPlugin, func(ctx context.Context, client *streamdeck.Client, event streamdeck.Event) error {
-		log.Printf("received SendToPlugin event (%s): %s", event.Context, event.Payload)
-		s := loadSettings(event.Context)
-		if err := json.Unmarshal(event.Payload, s); err != nil {
-			return fmt.Errorf("unmarshaling SendToPlugin payload: %w", err)
-		}
-
-		if err := client.SetSettings(ctx, s); err != nil {
-			return fmt.Errorf("setting settings: %w", err)
-		}
+				switch su.Status {
+				case pihole.Enabled:
+					if err := client.SetState(ctx, 0); err != nil {
+						_ = handleError("setting state: %w", err)
+					}
+				case pihole.Disabled:
+					if err := client.SetState(ctx, 1); err != nil {
+						_ = handleError("setting state: %w", err)
+					}
+				}
+			}
+		}()
 
 		return nil
 	})
 
 	action.RegisterHandler(streamdeck.WillDisappear, func(ctx context.Context, client *streamdeck.Client, event streamdeck.Event) error {
 		log.Printf("received Will Disappear event (%s): %s", event.Context, event.Payload)
-		delete(settings, event.Context)
+		deleteState(event.Context)
+		return nil
+	})
+
+	action.RegisterHandler(streamdeck.DidReceiveSettings, func(ctx context.Context, client *streamdeck.Client, event streamdeck.Event) error {
+		log.Printf("received DidReceiveSettings event (%s): %s", event.Context, event.Payload)
+		var p streamdeck.DidReceiveSettingsPayload
+		if err := json.Unmarshal(event.Payload, &p); err != nil {
+			return handleError("unmarshalling DidReceiveSettings payload: %w", err)
+		}
+
+		s := loadState(event.Context)
+		if err := s.UpdateSettingsFromJSON(p.Settings); err != nil {
+			return handleError("unmarshalling DidReceiveSettings payload settings: %w", err)
+		}
+
+		if err := client.SetSettings(ctx, s.Settings); err != nil {
+			return handleError("setting states: %w", err)
+		}
+
 		return nil
 	})
 
 	action.RegisterHandler(streamdeck.KeyUp, func(ctx context.Context, client *streamdeck.Client, event streamdeck.Event) error {
 		log.Printf("received KeyUp event (%s): %s", event.Context, event.Payload)
-		s, ok := settings[event.Context]
+		s, ok := states[event.Context]
 		if !ok {
-			return fmt.Errorf("no settings for context %q", event.Context)
+			return handleError("no states for context %q", event.Context)
 		}
 
-		s.Enabled = !s.Enabled
-		if err := client.SetSettings(ctx, s); err != nil {
-			return fmt.Errorf("setting settings: %w", err)
+		currentStatus, err := s.CurrentStatus()
+		if err != nil {
+			return client.ShowAlert(ctx)
 		}
 
-		if err := updateDisplay(ctx, client, s); err != nil {
-			return fmt.Errorf("setting title: %w", err)
+		switch currentStatus {
+		case pihole.Enabled:
+			if err := s.SetStatus(pihole.Disabled); err != nil {
+				return client.ShowAlert(ctx)
+			}
+		case pihole.Disabled:
+			if err := s.SetStatus(pihole.Enabled); err != nil {
+				return client.ShowAlert(ctx)
+			}
 		}
 
 		return nil
 	})
-}
-
-func updateDisplay(ctx context.Context, client *streamdeck.Client, s *StatusSettings) error {
-	title := "Enabled"
-	if !s.Enabled {
-		title = "Disabled"
-	}
-
-	return client.SetTitle(ctx, title, streamdeck.HardwareAndSoftware)
 }
