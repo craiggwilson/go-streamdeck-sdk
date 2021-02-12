@@ -1,0 +1,38 @@
+{
+  "Actions": [
+    {
+      "Name": "Pi-Hole Status",
+      "States": [
+        {
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "PropertyInspectorPath": "status_property_inspector.html",
+      "SupportedInMultiActions": false,
+      "Tooltip": "Enable or Disable a Pi-Hole",
+      "UUID": "com.craiggwilson.streamdeck.pihole.status"
+    }
+  ],
+  "SDKVersion": 2,
+  "Author": "Craig Wilson",
+  "CodePath": "streamdeck-pihole.exe",
+  "Description": "Pi-Hole utilities",
+  "Name": "Pi-Hole Utilities",
+  "URL": "https://github.com/craiggwilson",
+  "Version": "0.1",
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion" : "10.11"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion" : "10"
+    }
+  ],
+  "Software":
+  {
+    "MinimumVersion" : "4.1"
+  }
+}

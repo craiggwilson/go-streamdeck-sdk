@@ -1,0 +1,70 @@
+<head>
+    <meta charset="utf-8" />
+    <title>Pi-Hole Status</title>
+    <link rel="stylesheet" href="sdpi.css">
+</head>
+
+<body>
+<div class="sdpi-wrapper">
+    <div class="sdpi-item">
+        <label for="adminURL" class="sdpi-item-label">Admin URL</label>
+        <input id="adminURL" class="sdpi-item-value" required="required" onchange="updatePlugin()" />
+    </div>
+    <div class="sdpi-item">
+        <label for="apiToken" class="sdpi-item-label">API Token</label>
+        <input id="apiToken" class="sdpi-item-value" type="password" onchange="updatePlugin()" />
+    </div>
+    <div class="sdpi-item">
+        <label for="duration" class="sdpi-item-label">Duration</label>
+        <input id="duration" class="sdpi-item-value" placeholder="Enter duration (10s, 5m, etc...)" onchange="updatePlugin()" />
+    </div>
+</div>
+
+<script>
+    var websocket = null,
+        uuid = null,
+        actionInfo = {};
+
+    function connectElgatoStreamDeckSocket(inPort, inUUID, inRegisterEvent, inInfo, inActionInfo) {
+        uuid = inUUID;
+        actionInfo = JSON.parse(inActionInfo); // cache the info
+        websocket = new WebSocket('ws://localhost:' + inPort);
+
+        websocket.onopen = function () {
+            websocket.send(JSON.stringify({
+                event: inRegisterEvent,
+                uuid: inUUID
+            }));
+        }
+
+        websocket.addEventListener('message', function (event) {
+            console.log("Got message event!");
+
+            // Received message from Stream Deck
+            let jsonObj = JSON.parse(event.data);
+
+            if (jsonObj.event === 'sendToPropertyInspector') {
+                let payload = jsonObj.payload;
+                document.getElementById("adminURL").value = payload["adminURL"]
+                document.getElementById("apiToken").value = payload["apiToken"]
+                document.getElementById("duration").value = payload["duration"]
+            }
+        });
+    }
+
+    function updatePlugin() {
+        if (websocket) {
+            websocket.send(JSON.stringify({
+                "action": actionInfo['action'],
+                "event": "sendToPlugin",
+                "context": uuid,
+                "payload": {
+                    "adminURL": document.getElementById("adminURL").value,
+                    "apiToken": document.getElementById("apiToken").value,
+                    "duration": document.getElementById("duration").value,
+                },
+            }));
+        }
+    }
+</script>
+</body>
