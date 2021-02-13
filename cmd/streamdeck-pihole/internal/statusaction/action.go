@@ -1,4 +1,4 @@
-package statusplugin
+package statusaction
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/samwho/streamdeck"
 
-	"streamdeckpihole/pkg/pihole"
+	"github.com/craiggwilson/streamdeck-plugins/pkg/pihole"
 )
 
 // Register adds the CurrentStatus action to the client.

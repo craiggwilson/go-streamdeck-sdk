@@ -1,10 +1,10 @@
-package statusplugin
+package statusaction
 
 import (
 	"encoding/json"
 	"time"
 
-	"streamdeckpihole/pkg/pihole"
+	"github.com/craiggwilson/streamdeck-plugins/pkg/pihole"
 )
 
 func defaultSettings() *settings {

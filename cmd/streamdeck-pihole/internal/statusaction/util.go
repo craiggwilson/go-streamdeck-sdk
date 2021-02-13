@@ -1,4 +1,4 @@
-package statusplugin
+package statusaction
 
 import (
 	"fmt"
