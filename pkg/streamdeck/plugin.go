@@ -9,42 +9,72 @@ import (
 )
 
 // NewPlugin makes a Plugin.
-func NewPlugin(actions ...Action) *Plugin {
-	actionMap := make(map[streamdeckcore.ActionUUID]Action, len(actions))
-	for _, action := range actions {
-		actionMap[action.UUID()] = action
+func NewPlugin(actionFactories ...ActionInstanceFactory) *Plugin {
+	m := make(map[streamdeckcore.ActionUUID]actionHolder, len(actionFactories))
+	for _, actionFactory := range actionFactories {
+		m[actionFactory.UUID()] = actionHolder{
+			factory: actionFactory,
+			instances: make(map[streamdeckcore.EventContext]ActionInstance),
+		}
 	}
 
 	return &Plugin{
-		actions: actionMap,
+		actions: m,
 	}
 }
 
-// Plugin is the core implementation of a streamdeckcore.EventHandler. It handles the raw events
+// Plugin is the core implementation of a streamdeckcore.Plugin. It handles the raw events
 // and dispatches them to the appropriate actions.
 type Plugin struct {
-	actions map[streamdeckcore.ActionUUID]Action
+	pluginUUID streamdeckcore.PluginUUID
+	corePublisher streamdeckcore.Publisher
+
+	actions map[streamdeckcore.ActionUUID]actionHolder
 }
 
-func (mux *Plugin) Initialize(eventPublisher streamdeckcore.EventPublisher) {
-	for _, action := range mux.actions {
-		action.Initialize(eventPublisher)
-	}
+func (p *Plugin) Initialize(pluginUUID streamdeckcore.PluginUUID, publisher streamdeckcore.Publisher) {
+	p.pluginUUID = pluginUUID
+	p.corePublisher = publisher
 }
 
-func (mux *Plugin) HandleEvent(ctx context.Context, raw json.RawMessage) error {
-	var actionAndEvent struct {
+func (p *Plugin) HandleEvent(ctx context.Context, raw json.RawMessage) error {
+	var eventHeader struct {
 		Action streamdeckcore.ActionUUID `json:"action"`
-		Event streamdeckcore.EventName `json:"event"`
+		Event streamdeckcore.EventName `json:"eventHeader"`
+		Context streamdeckcore.EventContext `json:"context"`
 	}
-	if err := json.Unmarshal(raw, &actionAndEvent); err != nil {
-		return fmt.Errorf("unmarshalling action and event: %w", err)
+	if err := json.Unmarshal(raw, &eventHeader); err != nil {
+		return fmt.Errorf("unmarshalling action and eventHeader: %w", err)
 	}
 
-	a, ok := mux.actions[actionAndEvent.Action]
+	action, ok := p.actions[eventHeader.Action]
 	if !ok {
-		return fmt.Errorf("unknown action %q", a.UUID())
+		return fmt.Errorf("unknown action %q", eventHeader.Action)
 	}
 
-	return dispatchEvent(ctx, a, actionAndEvent.Event, raw)
+	// If there is no context, then dispatch the event to all action. This is true, for example, with the global
+	// settings events.
+	if eventHeader.Context == "" {
+		for _, action := range action.instances {
+			if err := dispatchEvent(ctx, action, eventHeader.Event, raw); err != nil {
+				return fmt.Errorf("dispatching to action %q, instance %q: %w", eventHeader.Action, eventHeader.Context, err)
+			}
+		}
+
+		return nil
+	}
+
+	instance, ok := action.instances[eventHeader.Context]
+	if !ok {
+		publisher := newCorePublisherAdapter(p.pluginUUID, eventHeader.Action, eventHeader.Context, p.corePublisher)
+		instance = action.factory.CreateActionInstance(eventHeader.Context, publisher)
+		action.instances[eventHeader.Context] = instance
+	}
+
+	return dispatchEvent(ctx, instance, eventHeader.Event, raw)
+}
+
+type actionHolder struct {
+	factory ActionInstanceFactory
+	instances map[streamdeckcore.EventContext]ActionInstance
 }

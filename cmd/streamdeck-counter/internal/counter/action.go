@@ -7,28 +7,35 @@ import (
 	"github.com/craiggwilson/streamdeck-plugins/pkg/streamdeck/streamdeckcore"
 )
 
-func New() streamdeck.Action {
-	return streamdeck.NewInstancedAction(
-		streamdeck.ActionInstanceFactoryFunc(func(_ streamdeckcore.EventContext) streamdeck.Action {
-			return &Action{}
-		}),
+const uuid = "com.craiggwilson.streamdeck.counter"
+
+func New() streamdeck.ActionInstanceFactory {
+	return streamdeck.NewActionInstanceFactory(
+		uuid,
+		func(eventContext streamdeckcore.EventContext, publisher streamdeck.Publisher) streamdeck.ActionInstance {
+			return &ActionInstance{
+				eventContext: eventContext,
+				publisher: publisher,
+			}
+		},
 	)
 }
 
-type Action struct {
-	eventPublisher streamdeckcore.EventPublisher
-	count int
+type ActionInstance struct {
+	eventContext streamdeckcore.EventContext
+	publisher streamdeck.Publisher
+	count     int
 }
 
-func (a *Action) UUID() streamdeckcore.ActionUUID {
-	return "com.craiggwilson.streamdeck.counter"
+func (a *ActionInstance) UUID() streamdeckcore.ActionUUID {
+	return uuid
 }
 
-func (a *Action) Initialize(eventPublisher streamdeckcore.EventPublisher) {
-	a.eventPublisher = eventPublisher
+func (a *ActionInstance) Context() streamdeckcore.EventContext {
+	return a.eventContext
 }
 
-func (a *Action) HandleKeyDown(ctx context.Context, event streamdeckcore.KeyDownEvent) error {
+func (a *ActionInstance) HandleKeyDown(ctx context.Context, event streamdeckcore.KeyDownEvent) error {
 	a.count++
 	return nil
 }

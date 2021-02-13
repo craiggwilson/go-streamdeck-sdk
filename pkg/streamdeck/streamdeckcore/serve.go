@@ -10,17 +10,19 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type EventHandler interface {
-	Initialize(eventPublisher EventPublisher)
+// Plugin is implemented by a plugin in order to interact with a Streamdeck.
+type Plugin interface {
+	Initialize(publisher Publisher)
 	HandleEvent(ctx context.Context, raw json.RawMessage) error
 }
 
-type EventPublisher interface {
+// Publisher is provided to Plugins so they can communicate with a Streamdeck.
+type Publisher interface {
 	PublishEvent(raw json.RawMessage) error
 }
 
 // Serve wraps a websocket to handle receiving and publishing events. To shutdown, cancel the provided context.
-func Serve(ctx context.Context, cfg *Config, eventHandler EventHandler) error {
+func Serve(ctx context.Context, cfg *Config, eventHandler Plugin) error {
 	url := fmt.Sprintf("ws://127.0.0.1:%d", cfg.Port)
 	log.Printf("[core] pluginUUID %q connecting to %s", cfg.PluginUUID, url)
 

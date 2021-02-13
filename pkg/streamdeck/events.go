@@ -38,7 +38,7 @@ type WillDisappearHandler interface {
 	HandleWillDisappear(ctx context.Context, event streamdeckcore.WillDisappearEvent) error
 }
 
-func dispatchEvent(ctx context.Context, action Action, eventName streamdeckcore.EventName, raw json.RawMessage) error {
+func dispatchEvent(ctx context.Context, action ActionInstance, eventName streamdeckcore.EventName, raw json.RawMessage) error {
 	switch eventName {
 	case streamdeckcore.DidReceiveSettings:
 		if h, ok := action.(DidReceiveSettingsHandler); ok {
@@ -90,7 +90,7 @@ func dispatchEvent(ctx context.Context, action Action, eventName streamdeckcore.
 		}
 	}
 
-	if h, ok := action.(streamdeckcore.EventHandler); ok {
+	if h, ok := action.(streamdeckcore.Plugin); ok {
 		return h.HandleEvent(ctx, raw)
 	}
 
