@@ -1,0 +1,38 @@
+{
+  "Actions": [
+    {
+      "Name": "Streamdeck Example Counter",
+      "States": [
+        {
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "Example Counter for Streamdeck",
+      "UUID": "com.craiggwilson.streamdeck.example.counter"
+    }
+  ],
+  "SDKVersion": 2,
+  "Author": "Craig Wilson",
+  "CodePath": "streamdeck-example.exe",
+  "Category": "Examples",
+  "Description": "Example Streamdeck Plugins",
+  "Name": "Example Streamdeck Plugins",
+  "URL": "https://github.com/craiggwilson/streamdeck-plugins",
+  "Version": "0.1",
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion" : "10.11"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion" : "10"
+    }
+  ],
+  "Software":
+  {
+    "MinimumVersion" : "4.1"
+  }
+}

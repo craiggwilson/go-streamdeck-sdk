@@ -2,6 +2,7 @@ package counter
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/craiggwilson/streamdeck-plugins/pkg/streamdeck"
 	"github.com/craiggwilson/streamdeck-plugins/pkg/streamdeck/streamdeckcore"
@@ -37,5 +38,8 @@ func (a *ActionInstance) Context() streamdeckcore.EventContext {
 
 func (a *ActionInstance) HandleKeyDown(ctx context.Context, event streamdeckcore.KeyDownEvent) error {
 	a.count++
-	return nil
+	return a.publisher.SetTitle(streamdeckcore.SetTitlePayload{
+		Title: strconv.Itoa(a.count),
+		Target: streamdeckcore.HardwareAndSoftware,
+	})
 }

@@ -5,11 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-counter/internal"
+	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-example/internal"
 )
 
 func main() {
-	lf, err := os.OpenFile(filepath.Join(os.TempDir(), "streamdeck-counter.log"), os.O_CREATE | os.O_TRUNC, 0644)
+	lf, err := os.OpenFile(filepath.Join(os.TempDir(), "streamdeck-example.log"), os.O_CREATE | os.O_TRUNC, 0644)
 	if err != nil {
 		log.Panicf("opening log file: %v", err)
 	}

@@ -7,12 +7,12 @@ import (
 	"log"
 	"sync"
 
-	"golang.org/x/net/websocket"
+	"nhooyr.io/websocket"
 )
 
 // Plugin is implemented by a plugin in order to interact with a Streamdeck.
 type Plugin interface {
-	Initialize(publisher Publisher)
+	Initialize(pluginUUID PluginUUID, publisher Publisher)
 	HandleEvent(ctx context.Context, raw json.RawMessage) error
 }
 
@@ -22,11 +22,11 @@ type Publisher interface {
 }
 
 // Serve wraps a websocket to handle receiving and publishing events. To shutdown, cancel the provided context.
-func Serve(ctx context.Context, cfg *Config, eventHandler Plugin) error {
+func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 	url := fmt.Sprintf("ws://127.0.0.1:%d", cfg.Port)
 	log.Printf("[core] pluginUUID %q connecting to %s", cfg.PluginUUID, url)
 
-	ws, err := websocket.Dial(url, "", "http://127.0.0.1")
+	c, _, err := websocket.Dial(ctx, url, nil)
 	if err != nil {
 		return fmt.Errorf("dialing %s: %w", url, err)
 	}
@@ -35,24 +35,27 @@ func Serve(ctx context.Context, cfg *Config, eventHandler Plugin) error {
 	publishFunc := eventPublisherFunc(func(raw json.RawMessage) error {
 		publishLock.Lock()
 		defer publishLock.Unlock()
-		log.Print("[core] sending message")
-		if err := websocket.JSON.Send(ws, raw); err != nil {
+		log.Printf("[core] sending message %v", string(raw))
+		if err := c.Write(ctx, websocket.MessageText, raw); err != nil {
 			return fmt.Errorf("sending event: %w", err)
 		}
+		log.Printf("[core] message sent")
 
 		return nil
 	})
-	eventHandler.Initialize(publishFunc)
+	plugin.Initialize(cfg.PluginUUID, publishFunc)
 
 	go func() {
 		for {
-			var event json.RawMessage
-			if err = websocket.JSON.Receive(ws, &event); err != nil {
+			var msg json.RawMessage
+			if _, msg, err = c.Read(ctx); err != nil {
 				log.Printf("[core] ERROR receiving event: %v", err)
 				continue
 			}
 
-			if err = eventHandler.HandleEvent(ctx, event); err != nil {
+			log.Printf("[core] received message: %s", string(msg))
+
+			if err = plugin.HandleEvent(ctx, msg); err != nil {
 				log.Printf("[core] ERROR handling event: %v", err)
 			}
 		}
@@ -75,7 +78,7 @@ func Serve(ctx context.Context, cfg *Config, eventHandler Plugin) error {
 
 	<-ctx.Done()
 
-	_ = ws.Close()
+	_ = c.Close(websocket.StatusNormalClosure, "shutdown")
 
 	return ctx.Err()
 }

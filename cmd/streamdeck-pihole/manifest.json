@@ -28,7 +28,7 @@
   "Description": "Pi-Hole utilities",
   "Name": "Pi-Hole Utilities",
   "Icon": "images/enabled",
-  "URL": "https://github.com/craiggwilson",
+  "URL": "https://github.com/craiggwilson/streamdeck-plugins",
   "Version": "0.1",
   "OS": [
     {

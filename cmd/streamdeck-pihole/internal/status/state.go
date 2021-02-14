@@ -1,4 +1,4 @@
-package statusaction
+package status
 
 import (
 	"encoding/json"

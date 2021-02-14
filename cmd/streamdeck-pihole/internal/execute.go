@@ -6,7 +6,7 @@ import (
 
 	"github.com/samwho/streamdeck"
 
-	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-pihole/internal/statusaction"
+	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-pihole/internal/status"
 )
 
 func Execute(args []string) {
@@ -27,6 +27,6 @@ func Execute(args []string) {
 
 func makeClient(params streamdeck.RegistrationParams) *streamdeck.Client {
 	client := streamdeck.NewClient(context.Background(), params)
-	statusaction.Register(client)
+	status.Register(client)
 	return client
 }
