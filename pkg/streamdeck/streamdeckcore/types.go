@@ -25,11 +25,11 @@ type DidReceiveGlobalSettingsPayload struct {
 }
 
 type DidReceiveSettingsEvent struct {
-	Action     ActionUUID                `json:"action"`
-	Event      EventName                 `json:"event"`
-	Context    EventContext              `json:"context"`
-	DeviceUUID DeviceUUID                `json:"device"`
-	Payload    DidReceiveSettingsPayload `json:"payload"`
+	Action  ActionUUID                `json:"action"`
+	Event   EventName                 `json:"event"`
+	Context EventContext              `json:"context"`
+	Device  DeviceUUID                `json:"device"`
+	Payload DidReceiveSettingsPayload `json:"payload"`
 }
 
 type DidReceiveSettingsPayload struct {
@@ -72,11 +72,11 @@ type GetSettingsEvent struct {
 type Base64String string
 
 type KeyDownEvent struct {
-	Action     ActionUUID     `json:"action"`
-	Event      EventName      `json:"event"`
-	Context    EventContext   `json:"context"`
-	DeviceUUID DeviceUUID     `json:"device"`
-	Payload    KeyDownPayload `json:"payload"`
+	Action  ActionUUID     `json:"action"`
+	Event   EventName      `json:"event"`
+	Context EventContext   `json:"context"`
+	Device  DeviceUUID     `json:"device"`
+	Payload KeyDownPayload `json:"payload"`
 }
 
 type KeyDownPayload struct {
@@ -88,11 +88,11 @@ type KeyDownPayload struct {
 }
 
 type KeyUpEvent struct {
-	Action     ActionUUID   `json:"action"`
-	Event      EventName    `json:"event"`
-	Context    EventContext `json:"context"`
-	DeviceUUID DeviceUUID   `json:"device"`
-	Payload    KeyUpPayload `json:"payload"`
+	Action  ActionUUID   `json:"action"`
+	Event   EventName    `json:"event"`
+	Context EventContext `json:"context"`
+	Device  DeviceUUID   `json:"device"`
+	Payload KeyUpPayload `json:"payload"`
 }
 
 type KeyUpPayload struct {
@@ -169,11 +169,11 @@ const (
 )
 
 type WillAppearEvent struct {
-	Action     ActionUUID        `json:"action"`
-	Event      EventName         `json:"event"`
-	Context    EventContext      `json:"context"`
-	DeviceUUID DeviceUUID        `json:"device"`
-	Payload    WillAppearPayload `json:"payload"`
+	Action  ActionUUID        `json:"action"`
+	Event   EventName         `json:"event"`
+	Context EventContext      `json:"context"`
+	Device  DeviceUUID        `json:"device"`
+	Payload WillAppearPayload `json:"payload"`
 }
 
 type WillAppearPayload struct {
@@ -184,11 +184,11 @@ type WillAppearPayload struct {
 }
 
 type WillDisappearEvent struct {
-	Action     ActionUUID           `json:"action"`
-	Event      EventName            `json:"event"`
-	Context    EventContext         `json:"context"`
-	DeviceUUID DeviceUUID           `json:"device"`
-	Payload    WillDisappearPayload `json:"payload"`
+	Action  ActionUUID           `json:"action"`
+	Event   EventName            `json:"event"`
+	Context EventContext         `json:"context"`
+	Device  DeviceUUID           `json:"device"`
+	Payload WillDisappearPayload `json:"payload"`
 }
 
 type WillDisappearPayload struct {

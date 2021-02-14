@@ -7,7 +7,7 @@ import (
 	"log"
 	"sync"
 
-	"nhooyr.io/websocket"
+	"github.com/gorilla/websocket"
 )
 
 // Plugin is implemented by a plugin in order to interact with a Streamdeck.
@@ -26,7 +26,7 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 	url := fmt.Sprintf("ws://127.0.0.1:%d", cfg.Port)
 	log.Printf("[core] pluginUUID %q connecting to %s", cfg.PluginUUID, url)
 
-	c, _, err := websocket.Dial(ctx, url, nil)
+	c, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return fmt.Errorf("dialing %s: %w", url, err)
 	}
@@ -36,10 +36,9 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 		publishLock.Lock()
 		defer publishLock.Unlock()
 		log.Printf("[core] sending message %v", string(raw))
-		if err := c.Write(ctx, websocket.MessageText, raw); err != nil {
+		if err := c.WriteMessage(websocket.TextMessage, raw); err != nil {
 			return fmt.Errorf("sending event: %w", err)
 		}
-		log.Printf("[core] message sent")
 
 		return nil
 	})
@@ -47,9 +46,16 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 
 	go func() {
 		for {
-			var msg json.RawMessage
-			if _, msg, err = c.Read(ctx); err != nil {
+			mt, msg, err := c.ReadMessage()
+			if err != nil {
 				log.Printf("[core] ERROR receiving event: %v", err)
+				continue
+			}
+
+			if mt == websocket.PingMessage {
+				if err := c.WriteMessage(websocket.PongMessage, []byte{}); err != nil {
+					log.Printf("error while ponging: %v\n", err)
+				}
 				continue
 			}
 
@@ -62,7 +68,7 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 	}()
 
 	type registerEvent struct {
-		PluginUUID PluginUUID `json:"pluginUUID,omitempty"`
+		PluginUUID PluginUUID `json:"uuid,omitempty"`
 		Event EventName `json:"event,omitempty"`
 	}
 
@@ -77,9 +83,7 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 	}
 
 	<-ctx.Done()
-
-	_ = c.Close(websocket.StatusNormalClosure, "shutdown")
-
+	_ = c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	return ctx.Err()
 }
 

@@ -8,7 +8,7 @@ import (
 	"github.com/craiggwilson/streamdeck-plugins/pkg/streamdeck/streamdeckcore"
 )
 
-const uuid = "com.craiggwilson.streamdeck.counter"
+const uuid = "com.craiggwilson.streamdeck.example.counter"
 
 func New() streamdeck.ActionInstanceFactory {
 	return streamdeck.NewActionInstanceFactory(

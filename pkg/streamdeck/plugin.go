@@ -39,8 +39,8 @@ func (p *Plugin) Initialize(pluginUUID streamdeckcore.PluginUUID, publisher stre
 
 func (p *Plugin) HandleEvent(ctx context.Context, raw json.RawMessage) error {
 	var eventHeader struct {
+		Event streamdeckcore.EventName `json:"event"`
 		Action streamdeckcore.ActionUUID `json:"action"`
-		Event streamdeckcore.EventName `json:"eventHeader"`
 		Context streamdeckcore.EventContext `json:"context"`
 	}
 	if err := json.Unmarshal(raw, &eventHeader); err != nil {
