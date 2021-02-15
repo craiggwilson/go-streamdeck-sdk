@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-example/internal/counter"
+	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-example/internal/synccounter"
 	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckutil"
 )
 
@@ -20,7 +21,7 @@ func main() {
 	}()
 
 	log.SetOutput(lf)
-	if err = streamdeckutil.Serve(context.Background(), os.Args, counter.New()); err != nil {
+	if err = streamdeckutil.Serve(context.Background(), os.Args, counter.New(), synccounter.New()); err != nil {
 		log.Fatal(err.Error())
 	}
 }

@@ -1,7 +1,7 @@
 {
   "Actions": [
     {
-      "Name": "Streamdeck Example Counter",
+      "Name": "Counter",
       "States": [
         {
           "TitleAlignment": "middle",
@@ -9,17 +9,29 @@
         }
       ],
       "SupportedInMultiActions": false,
-      "Tooltip": "Example Counter for Streamdeck",
+      "Tooltip": "Increments a counter.",
       "UUID": "com.craiggwilson.streamdeck.example.counter"
+    },
+    {
+      "Name": "Sync-Counter",
+      "States": [
+        {
+          "TitleAlignment": "middle",
+          "FontSize": "9"
+        }
+      ],
+      "SupportedInMultiActions": false,
+      "Tooltip": "Increments a counter on all instances.",
+      "UUID": "com.craiggwilson.streamdeck.example.synccounter"
     }
   ],
   "SDKVersion": 2,
   "Author": "Craig Wilson",
-  "CodePath": "streamdeck-example.exe",
-  "Category": "Examples",
-  "Description": "Example Streamdeck Plugins",
-  "Name": "Example Streamdeck Plugins",
-  "URL": "https://github.com/craiggwilson/streamdeck-plugins",
+  "CodePath": "go-streamdeck-sdk-example.exe",
+  "Category": "go-streamdeck-sdk Example",
+  "Description": "Example plugin using the go-streamdeck-sdk.",
+  "Name": "Example go-streamdeck-sdk Plugin",
+  "URL": "https://github.com/craiggwilson/go-streamdeck-sdk",
   "Version": "0.1",
   "OS": [
     {

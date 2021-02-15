@@ -8,5 +8,5 @@ if (Test-Path $installDir)
     Remove-Item -Force -Recurse $installDir
 }
 
-go build -o "$installDir\streamdeck-example.exe" $srcDir
+go build -o "$installDir\go-streamdeck-sdk-example.exe" $srcDir
 Copy-Item "$srcDir\*.json" $installDir
