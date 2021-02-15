@@ -1,1 +1,1 @@
-# streamdeck-plugins
+# go-streamdeck-sdk

@@ -6,7 +6,7 @@ import (
 
 	"github.com/samwho/streamdeck"
 
-	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-pihole/internal/status"
+	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-pihole/internal/status"
 )
 
 func Execute(args []string) {

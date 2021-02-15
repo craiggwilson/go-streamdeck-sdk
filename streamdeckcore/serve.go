@@ -10,13 +10,18 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Plugin is implemented by a plugin in order to interact with a Streamdeck.
-type Plugin interface {
-	Initialize(pluginUUID PluginUUID, publisher Publisher)
+// Handler is implemented to handle events.
+type Handler interface {
 	HandleEvent(ctx context.Context, raw json.RawMessage) error
 }
 
-// Publisher is provided to Plugins so they can communicate with a Streamdeck.
+// Plugin is implemented by a plugin in order to interact with a device.
+type Plugin interface {
+	Handler
+	Initialize(pluginUUID PluginUUID, publisher Publisher)
+}
+
+// Publisher is provided to Plugins so they can communicate with a device.
 type Publisher interface {
 	PublishEvent(raw json.RawMessage) error
 }

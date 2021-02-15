@@ -1,4 +1,4 @@
-module github.com/craiggwilson/streamdeck-plugins
+module github.com/craiggwilson/go-streamdeck-sdk
 
 go 1.15
 

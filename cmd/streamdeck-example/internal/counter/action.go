@@ -4,16 +4,17 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/craiggwilson/streamdeck-plugins/pkg/streamdeck"
-	"github.com/craiggwilson/streamdeck-plugins/pkg/streamdeck/streamdeckcore"
+	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
+
+	"github.com/craiggwilson/go-streamdeck-sdk"
 )
 
 const uuid = "com.craiggwilson.streamdeck.example.counter"
 
-func New() streamdeck.ActionInstanceFactory {
-	return streamdeck.NewActionInstanceFactory(
+func New() *streamdeck.DefaultAction {
+	return streamdeck.NewDefaultAction(
 		uuid,
-		func(eventContext streamdeckcore.EventContext, publisher streamdeck.Publisher) streamdeck.ActionInstance {
+		func(eventContext streamdeck.EventContext, publisher streamdeck.ActionInstancePublisher) streamdeck.ActionInstance {
 			return &ActionInstance{
 				eventContext: eventContext,
 				publisher: publisher,
@@ -23,23 +24,23 @@ func New() streamdeck.ActionInstanceFactory {
 }
 
 type ActionInstance struct {
-	eventContext streamdeckcore.EventContext
-	publisher streamdeck.Publisher
-	count     int
+	eventContext streamdeck.EventContext
+	publisher    streamdeck.ActionInstancePublisher
+	count        int
 }
 
-func (a *ActionInstance) UUID() streamdeckcore.ActionUUID {
+func (a *ActionInstance) UUID() streamdeck.ActionUUID {
 	return uuid
 }
 
-func (a *ActionInstance) Context() streamdeckcore.EventContext {
+func (a *ActionInstance) Context() streamdeck.EventContext {
 	return a.eventContext
 }
 
-func (a *ActionInstance) HandleKeyDown(ctx context.Context, event streamdeckcore.KeyDownEvent) error {
+func (a *ActionInstance) HandleKeyDown(_ context.Context, _ streamdeckevent.KeyDown) error {
 	a.count++
-	return a.publisher.SetTitle(streamdeckcore.SetTitlePayload{
+	return a.publisher.SetTitle(streamdeckevent.SetTitlePayload{
 		Title: strconv.Itoa(a.count),
-		Target: streamdeckcore.HardwareAndSoftware,
+		Target: streamdeckevent.HardwareAndSoftware,
 	})
 }

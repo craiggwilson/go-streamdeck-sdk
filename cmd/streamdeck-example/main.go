@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-example/internal"
+	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-example/internal/counter"
+	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckutil"
 )
 
 func main() {
@@ -18,5 +20,7 @@ func main() {
 	}()
 
 	log.SetOutput(lf)
-	internal.Execute(os.Args)
+	if err = streamdeckutil.Serve(context.Background(), os.Args, counter.New()); err != nil {
+		log.Fatal(err.Error())
+	}
 }

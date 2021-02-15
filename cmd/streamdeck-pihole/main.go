@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/craiggwilson/streamdeck-plugins/cmd/streamdeck-pihole/internal"
+	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-pihole/internal"
 )
 
 func main() {

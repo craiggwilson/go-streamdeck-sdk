@@ -9,7 +9,7 @@ import (
 
 	"github.com/samwho/streamdeck"
 
-	"github.com/craiggwilson/streamdeck-plugins/pkg/pihole"
+	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-pihole/internal/pihole"
 )
 
 // Register adds the CurrentStatus action to the client.

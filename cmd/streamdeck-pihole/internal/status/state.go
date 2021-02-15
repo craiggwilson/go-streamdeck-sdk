@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/craiggwilson/streamdeck-plugins/pkg/pihole"
+	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-pihole/internal/pihole"
 )
 
 func defaultSettings() *settings {
@@ -34,12 +34,12 @@ type state struct {
 }
 
 type forcedStatusUpdate struct {
-	Status pihole.Status
+	Status                   pihole.Status
 	RemainingDisabledSeconds int
 }
 
 type statusUpdate struct {
-	Status pihole.Status
+	Status                   pihole.Status
 	RemainingDisabledSeconds int
 }
 

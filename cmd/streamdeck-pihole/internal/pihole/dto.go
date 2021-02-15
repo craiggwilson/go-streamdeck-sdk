@@ -8,6 +8,6 @@ type StatusResponse struct {
 // Status indicates whether a Pi-Hole is enabled or disabled.
 type Status string
 const (
-	Enabled Status = "enabled"
+	Enabled  Status = "enabled"
 	Disabled Status = "disabled"
 )
