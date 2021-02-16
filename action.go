@@ -12,7 +12,6 @@ import (
 type Action interface {
 	UUID() streamdeckcore.ActionUUID
 	Initialize(pluginUUID streamdeckcore.PluginUUID, publisher streamdeckcore.Publisher)
-	HandleEvent(ctx context.Context, raw json.RawMessage) error
 }
 
 // NewDefaultAction makes an implementation of a DefaultAction.
