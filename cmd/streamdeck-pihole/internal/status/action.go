@@ -188,6 +188,6 @@ func (a *ActionInstance) updateStatus(status pihole.Status, disabledUntil time.T
 		title = "(unknown)"
 	}
 
-	_ = a.publisher.SetState(streamdeckevent.SetStatePayload{State: state})
 	_ = a.publisher.SetTitle(streamdeckevent.SetTitlePayload{Title: title})
+	_ = a.publisher.SetState(streamdeckevent.SetStatePayload{State: state})
 }
