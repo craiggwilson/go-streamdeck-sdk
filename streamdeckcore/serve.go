@@ -54,7 +54,7 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 			mt, msg, err := c.ReadMessage()
 			if err != nil {
 				log.Printf("[core] ERROR receiving event: %v", err)
-				continue
+				return
 			}
 
 			if mt == websocket.PingMessage {

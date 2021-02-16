@@ -13,22 +13,38 @@ import (
 // New creates an instance of a PiHole.
 func New(adminURL string, apiKey string) *PiHole {
 	return &PiHole{
-		AdminURL: adminURL,
-		APIKey: apiKey,
+		adminURL: adminURL,
+		apiKey:   apiKey,
 	}
 }
 
 // PiHole is a connection to a Pi-Hole.
 type PiHole struct {
-	AdminURL string
-	APIKey string
+	adminURL string
+	apiKey   string
+}
+
+// StatusUpdate is used to indicate when a status change has occurred while watching a Pi-Hole.
+type StatusUpdate struct {
+	Status Status
+	Err error
+}
+
+// AdminURL returns the admin URL used to communicate with the Pi-Hole.
+func (ph *PiHole) AdminURL() string {
+	return ph.adminURL
+}
+
+// APIKey returns the api key used for updating the Pi-Hole.
+func (ph *PiHole) APIKey() string {
+	return ph.apiKey
 }
 
 // Disable disables the Pi-Hole.
-func (ph *PiHole) Disable(duration time.Duration) error {
+func (ph *PiHole) Disable(durationSeconds int) error {
 	endpoint := "disable"
-	if duration != 0 {
-		endpoint = fmt.Sprintf("disable=%v", int(duration.Seconds()))
+	if durationSeconds != 0 {
+		endpoint = fmt.Sprintf("disable=%v", durationSeconds)
 	}
 
 	return ph.setStatus(endpoint, Disabled)
@@ -37,6 +53,14 @@ func (ph *PiHole) Disable(duration time.Duration) error {
 // Enable enables the Pi-Hole.
 func (ph *PiHole) Enable() error {
 	return ph.setStatus("enable", Enabled)
+}
+
+// Monitor monitors a pi-hole, refreshing at the specified interval. It returns a channel as well as function
+// to be used to unsubscribe.
+func (ph *PiHole) Monitor(refreshInterval time.Duration) *Monitor {
+	m := newMonitor(ph, refreshInterval)
+	m.start()
+	return m
 }
 
 // Status returns the current status of the Pi-Hole.
@@ -48,16 +72,16 @@ func (ph *PiHole) Status() (Status, error) {
 
 	var resp StatusResponse
 	if err := json.Unmarshal(raw, &resp); err != nil {
-		return "", fmt.Errorf("unmarshaling summaryRaw response: %w", err)
+		return Unknown, fmt.Errorf("unmarshaling summaryRaw response: %w", err)
 	}
 
 	return resp.Status, nil
 }
 
 func (ph *PiHole) get(endpoint string) ([]byte, error) {
-	url := fmt.Sprintf("%s?%s", ph.AdminURL, endpoint)
-	if ph.APIKey != "" {
-		url += fmt.Sprintf("&auth=%s", ph.APIKey)
+	url := fmt.Sprintf("%s?%s", ph.adminURL, endpoint)
+	if ph.apiKey != "" {
+		url += fmt.Sprintf("&auth=%s", ph.apiKey)
 	}
 
 	resp, err := http.Get(url) //nolint:gosec
@@ -91,9 +115,9 @@ func (ph *PiHole) setStatus(endpoint string, expectedStatus Status) error {
 		log.Printf("Response status %q, expected status %q: %s", resp.Status, expectedStatus, raw)
 		if expectedStatus == Enabled {
 			return errors.New("failed to enable")
-		} else {
-			return errors.New("failed to disable")
 		}
+
+		return errors.New("failed to disable")
 	}
 
 	return nil
