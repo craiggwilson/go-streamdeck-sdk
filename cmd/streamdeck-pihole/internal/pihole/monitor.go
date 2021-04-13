@@ -19,10 +19,24 @@ type Monitor struct {
 	ph *PiHole
 	refreshInterval time.Duration
 
+	current StatusUpdate
+
 	mu        sync.Mutex
 	subs      []*subscription
 	immediate chan struct{}
 	done      chan struct{}
+}
+
+// Disable disables the Pi-Hole.
+func (m *Monitor) Disable(durationSeconds int) {
+	err := m.ph.Disable(durationSeconds)
+	m.push(Disabled, time.Now().Add(time.Duration(durationSeconds) * time.Second), err)
+}
+
+// Enable enables the Pi-Hole.
+func (m *Monitor) Enable() {
+	err := m.ph.Enable()
+	m.push(Enabled, time.Time{}, err)
 }
 
 // RefreshInterval returns the refresh interval used.
@@ -48,6 +62,11 @@ func (m *Monitor) RefreshIn(duration time.Duration) {
 		default:
 		}
 	}()
+}
+
+// Status updates the status immediately and returns the result.
+func (m *Monitor) Status() StatusUpdate {
+	return m.check()
 }
 
 // Stop shuts the monitor down.
@@ -80,29 +99,39 @@ func (m *Monitor) Subscribe() (<-chan StatusUpdate, func()) {
 	return sub.ch, sub.unsub
 }
 
-func (m *Monitor) check(currentStatus Status) Status {
+func (m *Monitor) check() StatusUpdate {
 	newStatus, err := m.ph.Status()
 	if err != nil {
-		m.push(Unknown, err)
+		return m.push(Unknown, time.Time{}, err)
 	}
 
-	if newStatus != currentStatus {
-		m.push(newStatus, nil)
+	m.mu.Lock()
+	currentStatus := m.current
+	m.mu.Unlock()
+
+	if newStatus != currentStatus.Status {
+		return m.push(newStatus, currentStatus.DisabledUntil, nil)
 	}
 
-	return newStatus
+	return currentStatus
 }
 
 // push handles pushing new status updates to subscriptions and also removes closed
 // subscriptions in cooperation with the unsubscribe functions.
-func (m *Monitor) push(status Status, err error) {
+func (m *Monitor) push(status Status, disabledUntil time.Time, err error) StatusUpdate {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	m.current = StatusUpdate {
+		Status: status,
+		DisabledUntil: disabledUntil,
+		Err: err,
+	}
 
 	var newSubs []*subscription
 	for i := 0; i < len(m.subs); i++ {
 		sub := m.subs[i]
-		closed := sub.pushIfNotClosed(StatusUpdate{Status: status, Err: err})
+		closed := sub.pushIfNotClosed(m.current)
 		if sub.closed && newSubs == nil {
 			newSubs = make([]*subscription, i, len(m.subs)-1)
 			copy(newSubs, m.subs[:i])
@@ -112,21 +141,22 @@ func (m *Monitor) push(status Status, err error) {
 			newSubs = append(newSubs, sub)
 		}
 	}
+
+	return m.current
 }
 
 func (m *Monitor) start() {
 	go func() {
 		ticker := time.NewTicker(m.refreshInterval)
 		defer ticker.Stop()
-		var currentStatus Status
 		for {
 			select {
 			case _, ok := <-m.immediate:
 				if ok {
-					currentStatus = m.check(currentStatus)
+					m.check()
 				}
 			case <-ticker.C:
-				currentStatus = m.check(currentStatus)
+				m.check()
 			case <-m.done:
 				return
 			}
@@ -146,7 +176,10 @@ func (s *subscription) pushIfNotClosed(su StatusUpdate) bool {
 	defer s.mu.Unlock()
 
 	if !s.closed {
-		s.ch <- su
+		select {
+		case s.ch <- su:
+		default:
+		}
 	}
 
 	return s.closed

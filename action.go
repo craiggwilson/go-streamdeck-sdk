@@ -4,62 +4,62 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckcore"
 )
 
 // Action represents a discrete action and acts as a action to createInstance instances.
 type Action interface {
-	UUID() streamdeckcore.ActionUUID
-	Initialize(pluginUUID streamdeckcore.PluginUUID, publisher streamdeckcore.Publisher)
+	ActionUUID() ActionUUID
+	InitializeAction(pluginUUID PluginUUID, publisher ActionPublisher)
 }
 
-// NewDefaultAction makes an implementation of a DefaultAction.
-func NewDefaultAction(actionUUID streamdeckcore.ActionUUID, createInstance func(eventContext streamdeckcore.EventContext, publisher ActionInstancePublisher) ActionInstance) *DefaultAction {
-	return &DefaultAction{
+// NewInstancedAction makes an implementation of a InstancedAction.
+func NewInstancedAction(actionUUID ActionUUID, createInstance ActionInstanceFactory) *InstancedAction {
+	return &InstancedAction{
 		actionUUID:     actionUUID,
 		createInstance: createInstance,
-		instances:      make(map[streamdeckcore.EventContext]ActionInstance),
+		instances:      make(map[EventContext]ActionInstance),
 	}
 }
 
-// DefaultAction implements the Action interface and delegates to a func for action instance creation, passing along
+// InstancedAction implements the Action interface and delegates to a func for action instance creation, passing along
 // events to the appropriate instances.
-type DefaultAction struct {
-	actionUUID     streamdeckcore.ActionUUID
-	createInstance func(eventContext streamdeckcore.EventContext, publisher ActionInstancePublisher) ActionInstance
-	instances      map[streamdeckcore.EventContext]ActionInstance
+type InstancedAction struct {
+	actionUUID     ActionUUID
+	createInstance ActionInstanceFactory
+	instances      map[EventContext]ActionInstance
 
-	pluginUUID streamdeckcore.PluginUUID
-	publisher streamdeckcore.Publisher
+	pluginUUID PluginUUID
+	publisher ActionPublisher
 }
 
-// UUID implements the Action interface.
-func (a *DefaultAction) UUID() streamdeckcore.ActionUUID {
+// ActionUUID implements the Action interface.
+func (a *InstancedAction) ActionUUID() ActionUUID {
 	return a.actionUUID
 }
 
-// Initialize implements the Action interface.
-func (a *DefaultAction) Initialize(pluginUUID streamdeckcore.PluginUUID, publisher streamdeckcore.Publisher) {
+// InitializeAction implements the Action interface.
+func (a *InstancedAction) InitializeAction(pluginUUID PluginUUID, publisher ActionPublisher) {
 	a.pluginUUID = pluginUUID
 	a.publisher = publisher
 }
 
 // HandleEvent implements the streamdeckcore.Handler interface.
-func (a *DefaultAction) HandleEvent(ctx context.Context, raw json.RawMessage) error {
+func (a *InstancedAction) HandleEvent(ctx context.Context, raw json.RawMessage) error {
 	var eventHeader struct {
-		Event streamdeckcore.EventName `json:"event"`
-		Action streamdeckcore.ActionUUID `json:"action"`
-		Context streamdeckcore.EventContext `json:"context"`
+		Event EventName `json:"event"`
+		Action ActionUUID `json:"action"`
+		Context EventContext `json:"context"`
 	}
 	if err := json.Unmarshal(raw, &eventHeader); err != nil {
 		return fmt.Errorf("unmarshalling action and eventHeader: %w", err)
 	}
 
+	// If the action doesn't match, it means this event was sent here improperly.
 	if eventHeader.Action != "" && eventHeader.Action != a.actionUUID {
-		return nil
+		return fmt.Errorf("received mismatched action, %s != %s", a.actionUUID, eventHeader.Action)
 	}
 
+	// If the context is empty, the event is intended for all instances of this action.
 	if eventHeader.Context == "" {
 		for _, instance := range a.instances {
 			if err := dispatchEvent(ctx, instance, eventHeader.Event, raw); err != nil {
@@ -70,9 +70,10 @@ func (a *DefaultAction) HandleEvent(ctx context.Context, raw json.RawMessage) er
 		return nil
 	}
 
+	// If the instance doesn't yet exist, create one and save it off.
 	instance, ok := a.instances[eventHeader.Context]
 	if !ok {
-		publisher := newCoreActionInstancePublisher(a.pluginUUID, a.actionUUID, eventHeader.Context, a.publisher)
+		publisher := newCoreActionInstancePublisher(eventHeader.Context, a.publisher)
 		instance = a.createInstance(eventHeader.Context, publisher)
 		a.instances[eventHeader.Context] = instance
 	}
@@ -82,11 +83,4 @@ func (a *DefaultAction) HandleEvent(ctx context.Context, raw json.RawMessage) er
 	}
 
 	return nil
-}
-
-// ActionInstance represents an instance of an action. It should also implement some of the event handlers
-// in order to receive important events from the Streamdeck.
-type ActionInstance interface {
-	UUID() streamdeckcore.ActionUUID
-	Context() streamdeckcore.EventContext
 }

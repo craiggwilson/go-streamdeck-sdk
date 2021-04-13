@@ -4,16 +4,15 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
-
 	"github.com/craiggwilson/go-streamdeck-sdk"
+	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
 )
 
-const uuid = "com.craiggwilson.streamdeck.example.counter"
+const actionUUID = "com.craiggwilson.streamdeck.example.counter"
 
-func New() *streamdeck.DefaultAction {
-	return streamdeck.NewDefaultAction(
-		uuid,
+func New() *streamdeck.InstancedAction {
+	return streamdeck.NewInstancedAction(
+		actionUUID,
 		func(eventContext streamdeck.EventContext, publisher streamdeck.ActionInstancePublisher) streamdeck.ActionInstance {
 			return &ActionInstance{
 				eventContext: eventContext,
@@ -29,11 +28,11 @@ type ActionInstance struct {
 	count        int
 }
 
-func (a *ActionInstance) UUID() streamdeck.ActionUUID {
-	return uuid
+func (a *ActionInstance) ActionUUID() streamdeck.ActionUUID {
+	return actionUUID
 }
 
-func (a *ActionInstance) Context() streamdeck.EventContext {
+func (a *ActionInstance) EventContext() streamdeck.EventContext {
 	return a.eventContext
 }
 

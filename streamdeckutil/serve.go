@@ -18,7 +18,7 @@ func Serve(ctx context.Context, args []string, actions ...streamdeck.Action) err
 		return fmt.Errorf("parsing config args: %w", err)
 	}
 
-	plugin := streamdeck.NewDefaultPlugin(actions...)
+	plugin := streamdeck.NewPlugin(actions...)
 
 	ctx, cancel := context.WithCancel(ctx)
 	interrupt := make(chan os.Signal, 1)

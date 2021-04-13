@@ -6,22 +6,20 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/craiggwilson/go-streamdeck-sdk"
 	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-pihole/internal/pihole"
 	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
-
-	"github.com/craiggwilson/go-streamdeck-sdk"
 )
 
-const uuid = "com.craiggwilson.streamdeck.pihole.status"
+const actionUUID = "com.craiggwilson.streamdeck.pihole.status"
 
-func New() *streamdeck.DefaultAction {
-	return streamdeck.NewDefaultAction(
-		uuid,
+func New() *streamdeck.InstancedAction {
+	return streamdeck.NewInstancedAction(
+		actionUUID,
 		func(eventContext streamdeck.EventContext, publisher streamdeck.ActionInstancePublisher) streamdeck.ActionInstance {
 			instance := &ActionInstance{
 				eventContext: eventContext,
 				publisher:    publisher,
-				forcedStatusChange: make(chan forcedStatusChange, 1),
 			}
 
 			return instance
@@ -33,14 +31,8 @@ type ActionInstance struct {
 	eventContext streamdeck.EventContext
 	publisher    streamdeck.ActionInstancePublisher
 
-	ph            *pihole.PiHole
-	monitor       *pihole.Monitor
-	forcedStatusChange chan forcedStatusChange
-}
-
-type forcedStatusChange struct {
-	status pihole.Status
-	disabledUntil time.Time
+	ph      *pihole.PiHole
+	monitor *pihole.Monitor
 }
 
 type instanceSettings struct {
@@ -50,11 +42,11 @@ type instanceSettings struct {
 	DisableDurationSeconds int    `json:"disableDurationSeconds,omitempty"`
 }
 
-func (a *ActionInstance) UUID() streamdeck.ActionUUID {
-	return uuid
+func (a *ActionInstance) ActionUUID() streamdeck.ActionUUID {
+	return actionUUID
 }
 
-func (a *ActionInstance) Context() streamdeck.EventContext {
+func (a *ActionInstance) EventContext() streamdeck.EventContext {
 	return a.eventContext
 }
 
@@ -65,7 +57,7 @@ func (a *ActionInstance) HandleDidReceiveSettings(_ context.Context, event strea
 		return fmt.Errorf("applying settings: %w", err)
 	}
 
-	if err := a.receivedSettings(event.Payload.Settings); err != nil {
+	if _, err := a.applySettings(event.Payload.Settings); err != nil {
 		_ = a.publisher.ShowAlert()
 		return fmt.Errorf("receiving settings: %w", err)
 	}
@@ -74,42 +66,31 @@ func (a *ActionInstance) HandleDidReceiveSettings(_ context.Context, event strea
 }
 
 func (a *ActionInstance) HandleKeyDown(_ context.Context, event streamdeckevent.KeyDown) error {
-	var settings instanceSettings
-	if err := json.Unmarshal(event.Payload.Settings, &settings); err != nil {
+	settings, err := a.applySettings(event.Payload.Settings)
+	if err != nil {
 		_ = a.publisher.ShowAlert()
-		return fmt.Errorf("unmarshalling settings: %w", err)
+		return fmt.Errorf("receiving settings: %w", err)
 	}
 
-	if a.ph == nil {
+	if a.monitor == nil {
 		return nil
 	}
 
-	status, _ := a.ph.Status()
-	switch status {
+	status := a.monitor.Status()
+	switch status.Status { //nolint:exhaustive
 	case pihole.Enabled:
-		if err := a.ph.Disable(settings.DisableDurationSeconds); err != nil {
-			_ = a.publisher.ShowAlert()
-			return fmt.Errorf("disabling pi-hole: %w", err)
-		}
-
+		a.monitor.Disable(settings.DisableDurationSeconds)
 		duration := time.Duration(settings.DisableDurationSeconds) * time.Second
 		a.monitor.RefreshIn(duration)
-		a.forcedStatusChange <- forcedStatusChange{pihole.Disabled, time.Now().Add(duration)}
-	case pihole.Disabled:
-		if err := a.ph.Enable(); err != nil {
-			_ = a.publisher.ShowAlert()
-			return fmt.Errorf("enabling pi-hole: %w", err)
-		}
-		a.forcedStatusChange <- forcedStatusChange{pihole.Enabled, time.Time{}}
 	default:
-		a.forcedStatusChange <- forcedStatusChange{status: status}
+		a.monitor.Enable()
 	}
 
 	return nil
 }
 
 func (a *ActionInstance) HandleWillAppear(_ context.Context, event streamdeckevent.WillAppear) error {
-	if err := a.receivedSettings(event.Payload.Settings); err != nil {
+	if _, err := a.applySettings(event.Payload.Settings); err != nil {
 		_ = a.publisher.ShowAlert()
 		return fmt.Errorf("receiving settings: %w", err)
 	}
@@ -117,68 +98,58 @@ func (a *ActionInstance) HandleWillAppear(_ context.Context, event streamdeckeve
 	return nil
 }
 
-func (a *ActionInstance) receivedSettings(settingsRaw json.RawMessage) error {
+func (a *ActionInstance) applySettings(settingsRaw json.RawMessage) (instanceSettings, error) {
 	var settings instanceSettings
 	if err := json.Unmarshal(settingsRaw, &settings); err != nil {
-		return fmt.Errorf("unmarshalling settings: %w", err)
-	}
-
-	if a.monitor != nil &&
-		a.ph.AdminURL() == settings.AdminURL &&
-		a.ph.APIKey() == settings.APIKey &&
-		a.monitor.RefreshInterval() == time.Duration(settings.RefreshIntervalSeconds) * time.Second {
-		return nil
+		return instanceSettings{}, fmt.Errorf("unmarshalling settings: %w", err)
 	}
 
 	if a.monitor != nil {
+		if a.ph.AdminURL() == settings.AdminURL &&
+			a.ph.APIKey() == settings.APIKey &&
+			a.monitor.RefreshInterval() == time.Duration(settings.RefreshIntervalSeconds)*time.Second {
+			return settings, nil
+		}
+
 		a.monitor.Stop()
 	}
+
 	a.ph = pihole.New(settings.AdminURL, settings.APIKey)
 	a.monitor = a.ph.Monitor(time.Duration(settings.RefreshIntervalSeconds) * time.Second)
+	currentStatus := a.monitor.Status()
 	ch, _ := a.monitor.Subscribe()
 
 	go func() {
 		ticker := time.NewTicker(1 * time.Second)
-		var status pihole.Status
-		var disabledUntil time.Time
 		for {
+			a.updateStatus(currentStatus)
 			select {
 			case <-ticker.C:
-			case fsc := <-a.forcedStatusChange:
-				status = fsc.status
-				disabledUntil = fsc.disabledUntil
 			case su, ok := <-ch:
 				if !ok {
 					ticker.Stop()
 					return
 				}
-
-				status = su.Status
+				currentStatus = su
 			}
-
-			if status == pihole.Enabled {
-				disabledUntil = time.Time{}
-			}
-
-			a.updateStatus(status, disabledUntil)
 		}
 	}()
 
-	return nil
+	return settings, nil
 }
 
-func (a *ActionInstance) updateStatus(status pihole.Status, disabledUntil time.Time) {
+func (a *ActionInstance) updateStatus(status pihole.StatusUpdate) {
 	var title string
 	var state int
 
-	switch status {
+	switch status.Status { //nolint:exhaustive
 	case pihole.Enabled:
 		state = 0
 		title = ""
 	case pihole.Disabled:
 		state = 1
-		if !disabledUntil.IsZero() {
-			remaining := time.Duration(int(time.Until(disabledUntil).Seconds())) * time.Second
+		if !status.DisabledUntil.IsZero() {
+			remaining := time.Duration(int(time.Until(status.DisabledUntil).Seconds())) * time.Second
 			if remaining > 0 {
 				title = remaining.String()
 			}

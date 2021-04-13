@@ -24,12 +24,6 @@ type PiHole struct {
 	apiKey   string
 }
 
-// StatusUpdate is used to indicate when a status change has occurred while watching a Pi-Hole.
-type StatusUpdate struct {
-	Status Status
-	Err error
-}
-
 // AdminURL returns the admin URL used to communicate with the Pi-Hole.
 func (ph *PiHole) AdminURL() string {
 	return ph.adminURL
@@ -84,7 +78,7 @@ func (ph *PiHole) get(endpoint string) ([]byte, error) {
 		url += fmt.Sprintf("&auth=%s", ph.apiKey)
 	}
 
-	resp, err := http.Get(url) //nolint:gosec
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("hitting %q: %w", url, err)
 	}

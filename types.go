@@ -13,5 +13,8 @@ type DeviceUUID = streamdeckcore.DeviceUUID
 // EventContext is the unique identifier for an instance of an action. It is an alias for streamdeckcore.EventContext.
 type EventContext = streamdeckcore.EventContext
 
+// EventName is the name of an event. It is an alias for streamdeckcore.EventName.
+type EventName = streamdeckcore.EventName
+
 // PluginUUID is the unique identifier assigned to a plugin by a device. It is an alias for streamdeckcore.PluginUUID.
 type PluginUUID = streamdeckcore.PluginUUID

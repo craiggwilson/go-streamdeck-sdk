@@ -93,6 +93,7 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 }
 
 type eventPublisherFunc func(raw json.RawMessage) error
+
 func (f eventPublisherFunc) PublishEvent(raw json.RawMessage) error {
 	return f(raw)
 }

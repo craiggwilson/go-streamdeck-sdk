@@ -3,31 +3,26 @@ package synccounter
 import (
 	"context"
 	"strconv"
-	"sync"
-
-	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
 
 	"github.com/craiggwilson/go-streamdeck-sdk"
+	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
 )
 
-const uuid = "com.craiggwilson.streamdeck.example.synccounter"
+const actionUUID = "com.craiggwilson.streamdeck.example.synccounter"
 
-func New() *streamdeck.DefaultAction {
-	var l sync.Mutex
+func New() *streamdeck.InstancedAction {
 	var instances []*ActionInstance
 	var count int
 
 	increment := func() {
-		l.Lock()
-		defer l.Unlock()
 		count++
 		for _, instance := range instances {
 			instance.display(count)
 		}
 	}
 
-	return streamdeck.NewDefaultAction(
-		uuid,
+	return streamdeck.NewInstancedAction(
+		actionUUID,
 		func(eventContext streamdeck.EventContext, publisher streamdeck.ActionInstancePublisher) streamdeck.ActionInstance {
 			instance := &ActionInstance{
 				eventContext: eventContext,
@@ -35,8 +30,6 @@ func New() *streamdeck.DefaultAction {
 				inc: increment,
 			}
 
-			l.Lock()
-			defer l.Unlock()
 			instances = append(instances, instance)
 			return instance
 		},
@@ -49,11 +42,11 @@ type ActionInstance struct {
 	inc func()
 }
 
-func (a *ActionInstance) UUID() streamdeck.ActionUUID {
-	return uuid
+func (a *ActionInstance) ActionUUID() streamdeck.ActionUUID {
+	return actionUUID
 }
 
-func (a *ActionInstance) Context() streamdeck.EventContext {
+func (a *ActionInstance) EventContext() streamdeck.EventContext {
 	return a.eventContext
 }
 

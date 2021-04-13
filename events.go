@@ -198,8 +198,6 @@ func dispatchEvent(ctx context.Context, target interface{}, eventName streamdeck
 				return fmt.Errorf("unmarshalling %s: %w", streamdeckevent.WillAppearName, err)
 			}
 			return h.HandleWillAppear(ctx, event)
-		} else {
-			fmt.Println("DOES NOT HANDLE WILL APPEAR: %T", target)
 		}
 	case streamdeckevent.WillDisappearName:
 		if h, ok := target.(WillDisappearHandler); ok {
