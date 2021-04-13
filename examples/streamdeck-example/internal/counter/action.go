@@ -16,7 +16,7 @@ func New() *streamdeck.InstancedAction {
 		func(eventContext streamdeck.EventContext, publisher streamdeck.ActionInstancePublisher) streamdeck.ActionInstance {
 			return &ActionInstance{
 				eventContext: eventContext,
-				publisher: publisher,
+				publisher:    publisher,
 			}
 		},
 	)
@@ -39,7 +39,7 @@ func (a *ActionInstance) EventContext() streamdeck.EventContext {
 func (a *ActionInstance) HandleKeyDown(_ context.Context, _ streamdeckevent.KeyDown) error {
 	a.count++
 	return a.publisher.SetTitle(streamdeckevent.SetTitlePayload{
-		Title: strconv.Itoa(a.count),
+		Title:  strconv.Itoa(a.count),
 		Target: streamdeckevent.HardwareAndSoftware,
 	})
 }

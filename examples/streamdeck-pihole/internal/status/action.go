@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/craiggwilson/go-streamdeck-sdk"
-	"github.com/craiggwilson/go-streamdeck-sdk/cmd/streamdeck-pihole/internal/pihole"
+	"github.com/craiggwilson/go-streamdeck-sdk/examples/streamdeck-pihole/internal/pihole"
 	"github.com/craiggwilson/go-streamdeck-sdk/streamdeckevent"
 )
 

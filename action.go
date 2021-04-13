@@ -29,7 +29,7 @@ type InstancedAction struct {
 	instances      map[EventContext]ActionInstance
 
 	pluginUUID PluginUUID
-	publisher ActionPublisher
+	publisher  ActionPublisher
 }
 
 // ActionUUID implements the Action interface.
@@ -46,8 +46,8 @@ func (a *InstancedAction) InitializeAction(pluginUUID PluginUUID, publisher Acti
 // HandleEvent implements the streamdeckcore.Handler interface.
 func (a *InstancedAction) HandleEvent(ctx context.Context, raw json.RawMessage) error {
 	var eventHeader struct {
-		Event EventName `json:"event"`
-		Action ActionUUID `json:"action"`
+		Event   EventName    `json:"event"`
+		Action  ActionUUID   `json:"action"`
 		Context EventContext `json:"context"`
 	}
 	if err := json.Unmarshal(raw, &eventHeader); err != nil {

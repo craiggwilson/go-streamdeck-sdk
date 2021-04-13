@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	_ ActionPublisher         = &coreActionPublisher{}
-	_ ActionInstancePublisher = &coreActionInstancePublisher{}
+	_ ActionPublisher         = (*coreActionPublisher)(nil)
+	_ ActionInstancePublisher = (*coreActionInstancePublisher)(nil)
 )
 
 // Publisher publishes events for a plugin. It is an alias for a Publisher.
@@ -221,13 +221,13 @@ func newCoreActionInstancePublisher(
 	corePublisher ActionPublisher) *coreActionInstancePublisher {
 
 	return &coreActionInstancePublisher{
-		eventContext:  eventContext,
+		eventContext:    eventContext,
 		actionPublisher: corePublisher,
 	}
 }
 
 type coreActionInstancePublisher struct {
-	eventContext  EventContext
+	eventContext    EventContext
 	actionPublisher ActionPublisher
 }
 

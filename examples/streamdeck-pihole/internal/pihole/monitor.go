@@ -7,16 +7,16 @@ import (
 
 func newMonitor(ph *PiHole, refreshInterval time.Duration) *Monitor {
 	return &Monitor{
-		ph:        ph,
+		ph:              ph,
 		refreshInterval: refreshInterval,
-		immediate: make(chan struct{}),
-		done:      make(chan struct{}),
+		immediate:       make(chan struct{}),
+		done:            make(chan struct{}),
 	}
 }
 
 // Monitor handles watching a Pi-Hole for status changes on a specified interval.
 type Monitor struct {
-	ph *PiHole
+	ph              *PiHole
 	refreshInterval time.Duration
 
 	current StatusUpdate
@@ -30,7 +30,7 @@ type Monitor struct {
 // Disable disables the Pi-Hole.
 func (m *Monitor) Disable(durationSeconds int) {
 	err := m.ph.Disable(durationSeconds)
-	m.push(Disabled, time.Now().Add(time.Duration(durationSeconds) * time.Second), err)
+	m.push(Disabled, time.Now().Add(time.Duration(durationSeconds)*time.Second), err)
 }
 
 // Enable enables the Pi-Hole.
@@ -122,10 +122,10 @@ func (m *Monitor) push(status Status, disabledUntil time.Time, err error) Status
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.current = StatusUpdate {
-		Status: status,
+	m.current = StatusUpdate{
+		Status:        status,
 		DisabledUntil: disabledUntil,
-		Err: err,
+		Err:           err,
 	}
 
 	var newSubs []*subscription

@@ -74,12 +74,12 @@ func Serve(ctx context.Context, cfg *Config, plugin Plugin) error {
 
 	type registerEvent struct {
 		PluginUUID PluginUUID `json:"uuid,omitempty"`
-		Event EventName `json:"event,omitempty"`
+		Event      EventName  `json:"event,omitempty"`
 	}
 
 	raw, _ := json.Marshal(registerEvent{
 		PluginUUID: cfg.PluginUUID,
-		Event: cfg.RegisterEvent,
+		Event:      cfg.RegisterEvent,
 	})
 
 	if err := publishFunc(raw); err != nil {

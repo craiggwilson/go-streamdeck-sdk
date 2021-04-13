@@ -27,7 +27,7 @@ func New() *streamdeck.InstancedAction {
 			instance := &ActionInstance{
 				eventContext: eventContext,
 				publisher:    publisher,
-				inc: increment,
+				inc:          increment,
 			}
 
 			instances = append(instances, instance)
@@ -39,7 +39,7 @@ func New() *streamdeck.InstancedAction {
 type ActionInstance struct {
 	eventContext streamdeck.EventContext
 	publisher    streamdeck.ActionInstancePublisher
-	inc func()
+	inc          func()
 }
 
 func (a *ActionInstance) ActionUUID() streamdeck.ActionUUID {

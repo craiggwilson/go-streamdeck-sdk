@@ -35,7 +35,7 @@ func (p *Plugin) Initialize(pluginUUID PluginUUID, publisher Publisher) {
 // HandleEvent implements the streamdeckcore.Handler interface.
 func (p *Plugin) HandleEvent(ctx context.Context, raw json.RawMessage) error {
 	var eventHeader struct {
-		Event EventName `json:"event"`
+		Event  EventName  `json:"event"`
 		Action ActionUUID `json:"action"`
 	}
 	if err := json.Unmarshal(raw, &eventHeader); err != nil {

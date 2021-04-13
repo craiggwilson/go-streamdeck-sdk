@@ -6,8 +6,9 @@ import (
 
 // Status indicates whether a Pi-Hole is enabled or disabled.
 type Status string
+
 const (
-	Unknown Status = ""
+	Unknown  Status = ""
 	Enabled  Status = "enabled"
 	Disabled Status = "disabled"
 )
@@ -19,7 +20,7 @@ type StatusResponse struct {
 
 // StatusUpdate is used to indicate when a status change has occurred while watching a Pi-Hole.
 type StatusUpdate struct {
-	Status Status
+	Status        Status
 	DisabledUntil time.Time
-	Err error
+	Err           error
 }

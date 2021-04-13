@@ -7,10 +7,10 @@ import (
 
 // Config holds the launch configuration for a plugin.
 type Config struct {
-	Port int
-	PluginUUID PluginUUID
+	Port          int
+	PluginUUID    PluginUUID
 	RegisterEvent EventName
-	Info string
+	Info          string
 }
 
 // ParseConfig parses the configuration from the provide arguments.

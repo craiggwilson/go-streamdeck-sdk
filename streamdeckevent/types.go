@@ -13,14 +13,14 @@ type Color string
 // Coordinates is the column and row of a button.
 type Coordinates struct {
 	Column int `json:"column"`
-	Row int `json:"row"`
+	Row    int `json:"row"`
 }
 
 // DeviceInfo is the device information provided by the device.
 type DeviceInfo struct {
-	Type       DeviceType `json:"type,omitempty"`
-	Size       DeviceSize `json:"size,omitempty"`
-	DeviceName streamdeckcore.DeviceName     `json:"deviceName,omitempty"`
+	Type       DeviceType                `json:"type,omitempty"`
+	Size       DeviceSize                `json:"size,omitempty"`
+	DeviceName streamdeckcore.DeviceName `json:"deviceName,omitempty"`
 }
 
 // DeviceSize is the size of a Streamdeck.
@@ -31,16 +31,18 @@ type DeviceSize struct {
 
 // DeviceType is the type of device.
 type DeviceType int
+
 const (
 	StreamDeck       DeviceType = 0
 	StreamDeckMini   DeviceType = 1
 	StreamDeckXL     DeviceType = 2
 	StreamDeckMobile DeviceType = 3
-	CorsairGKeys DeviceType = 4
+	CorsairGKeys     DeviceType = 4
 )
 
 // Target indicates where to apply an event.
 type Target int
+
 const (
 	HardwareAndSoftware Target = 0
 	OnlyHardware        Target = 1
@@ -49,6 +51,7 @@ const (
 
 // VerticalAlignment is a vertical alignment.
 type VerticalAlignment string
+
 const (
 	Bottom VerticalAlignment = "bottom"
 	Middle VerticalAlignment = "middle"
